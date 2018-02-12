@@ -34,7 +34,7 @@
 
 #define RECV_PIN 11
 #define NEOPIXEL_PIN 6
-#define NUM_LEDS 100
+#define NUM_LEDS 1
 
 // ESP8266 runs under an RTOS and doens't have precise interrupts, so it has its
 // separate IR library and a custom I2S based neopixel library
@@ -57,7 +57,7 @@
 
     // Turn off Wifi
     // https://www.hackster.io/rayburne/esp8266-turn-off-wifi-reduce-current-big-time-1df8ae
-    #define FREQUENCY    160                  // valid 80, 160
+    #define FREQUENCY   80                  // valid 80, 160
     //
     #include "ESP8266WiFi.h"
     extern "C" {
@@ -493,8 +493,8 @@ void flash3(uint8_t wait) {
 
 void loop() {
     if ((uint8_t) nextdemo > 0) {
-  Serial.print("Running demo: ");
-  Serial.println((uint8_t) nextdemo);
+//  Serial.print("Running demo: ");
+ // Serial.println((uint8_t) nextdemo);
     }
     switch (nextdemo) {
 
@@ -567,12 +567,12 @@ void loop() {
     // speed changing function.
     //change_speed(0);
 
-    Serial.println("Loop done, listening for IR and restarting demo");
+ //   Serial.println("Loop done, listening for IR and restarting demo");
     // delay 80ms may work rarely
     // delay 200ms works 60-90% of the time
     // delay 500ms works no more reliably.
     if (handle_IR(1)) return;
-    Serial.println("No IR");
+  //  Serial.println("No IR");
 }
 
 
