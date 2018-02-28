@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Idle renders correctly 1`] = `
+<div
+  className="controls"
+>
+  <span
+    aria-hidden={true}
+    className="fa fa-add"
+    data-state={0}
+  />
+</div>
+`;
