@@ -8,7 +8,7 @@ import GameRun from './GameRun.js';
 import Controls from './Controls.js';
 
 class Game extends Component {
-
+	
 	render() {
 		let state = Game.StateName[this.props.state] || 'Unknown';
 		let className = "Game STATE_" + state.toUpperCase();
@@ -21,6 +21,9 @@ class Game extends Component {
 		</div>);
 	}
 
+	/**
+	 * Render the configuration panel
+	 */
 	renderConfig() {
 		if(this.props.state !== Game.State.IDLE) return;
 		switch(this.props.type)
@@ -30,6 +33,9 @@ class Game extends Component {
 		}
 	}
 
+	/**
+	 * Render the running game panel
+	 */
 	renderRun() {
 		if(this.props.state === Game.State.IDLE) return;
 		switch(this.props.type)
@@ -39,8 +45,18 @@ class Game extends Component {
 		}
 	}
 
+	/**
+	 * Render the pause/play Controls
+	 */
 	renderControls() {
-		return <Controls state={this.props.state}/>;
+		return <Controls state={this.props.state} onChange={this.stateHandler}/>;
+	}
+
+	/**
+	 * Handle requests to change game state
+	 */
+	stateHandler(state) {
+		alert("State " + Game.StateName[state]);
 	}
 }
 
