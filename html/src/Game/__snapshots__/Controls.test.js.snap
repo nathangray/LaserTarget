@@ -8,6 +8,7 @@ exports[`Idle renders correctly 1`] = `
     aria-hidden={true}
     className="fa fa-add"
     data-state={0}
+    onClick={[Function]}
   />
 </div>
 `;

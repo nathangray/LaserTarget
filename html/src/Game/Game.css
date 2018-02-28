@@ -32,7 +32,9 @@
 	position: fixed;
 	bottom: 0px;
 	width: 100%;
-	padding: 0.5ex 0ex;
 	color: white;
 	font-size: 6ex;
+}
+.controls span {
+	margin: 0.5ex;
 }

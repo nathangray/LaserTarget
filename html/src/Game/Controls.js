@@ -21,16 +21,24 @@ class Controls extends React.Component {
 	render() {
 		switch (this.props.state)	{
 			case Game.State.IDLE:
-			case Game.State.END:
-				return <div className="controls"><FontAwesome name='play' data-state={Game.State.PLAY} onClick={this.changeHandler}/></div>;
+				return <div className="controls">
+						<FontAwesome name='play' data-state={Game.State.PLAY} onClick={this.changeHandler}/>
+					</div>;
 			case Game.State.STARTING:
 			case Game.State.PLAY:
 				return <div className="controls">
-						<FontAwesome name='stop' data-state={Game.State.END} />
-						<FontAwesome name='repeat' data-state={Game.State.IDLE}/>
+						<FontAwesome name='stop' data-state={Game.State.END}  onClick={this.changeHandler}/>
+						<FontAwesome name='repeat' data-state={Game.State.IDLE} onClick={this.changeHandler}/>
 					</div>;
+			case Game.State.END:
+				return <div className="controls">
+					<FontAwesome name='cogs' data-state={Game.State.IDLE} onClick={this.changeHandler} />
+					<FontAwesome name='repeat' data-state={Game.State.PLAY} onClick={this.changeHandler}/>
+				</div>;
 			default:
-				return <div className="controls"><FontAwesome name='add' data-state={Game.State.IDLE} /></div>;
+				return <div className="controls">
+					<FontAwesome name='add' data-state={Game.State.IDLE} onClick={this.changeHandler} />
+				</div>;
 		}
 	}
 
