@@ -35,8 +35,6 @@ class Controls extends React.Component {
 	}
 
 	changeHandler(e) {
-		let new_state = false;
-
 		if (typeof this.props.onChange === 'function') {
         this.props.onChange(e.target.dataset.state);
     }
