@@ -8,14 +8,18 @@ import GameRun from './GameRun.js';
 import Controls from './Controls.js';
 
 class Game extends Component {
-	
+	propTypes: {
+      state:          React.PropTypes.number,
+			type:           React.PropTypes.string,
+      stateHandler:   React.PropTypes.func
+  }
 	render() {
 		let state = Game.StateName[this.props.state] || 'Unknown';
 		let className = "Game STATE_" + state.toUpperCase();
 
 		return (<div className={className}>
 			{state}
-			{this.renderConfig()}
+			{this.renderConfig(this.props.type)}
 			{this.renderRun()}
 			{this.renderControls()}
 		</div>);
@@ -24,9 +28,9 @@ class Game extends Component {
 	/**
 	 * Render the configuration panel
 	 */
-	renderConfig() {
+	renderConfig(type) {
 		if(this.props.state !== Game.State.IDLE) return;
-		switch(this.props.type)
+		switch(type)
 		{
 			default:
 				return <GameConfig value={this.props.config} />;
@@ -49,15 +53,9 @@ class Game extends Component {
 	 * Render the pause/play Controls
 	 */
 	renderControls() {
-		return <Controls state={this.props.state} onChange={this.stateHandler}/>;
+		return <Controls state={this.props.state} onChange={this.props.stateHandler}/>;
 	}
 
-	/**
-	 * Handle requests to change game state
-	 */
-	stateHandler(state) {
-		alert("State " + Game.StateName[state]);
-	}
 }
 
 Game.State = {
