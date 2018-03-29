@@ -5,7 +5,8 @@ import './App.css';
 import Game from './Game/Game.js';
 
 const API = '/';
-const STATE_QUERY = 'state'
+const STATE_QUERY = 'state';
+const GAME_QUERY = 'game';
 
 class App extends Component {
 
@@ -14,7 +15,7 @@ class App extends Component {
 		super(props);
 		this.state = {
 			state: props.state,
-			type: null,
+			game: {type: 'None', config: {time:'yarp'}},
 			isLoading: false,
 			error: null
 		};
@@ -37,8 +38,9 @@ class App extends Component {
 					<div className="error">{this.state.error ? this.state.error.message : ''}</div>
         </header>
         <Game
-					type={this.state.type}
 					state={this.state.state}
+					type={this.state.game.type}
+					config={this.state.game.config}
 					stateHandler={(state) => this.stateChangeHandler(state)}
 				/>
       </div>
@@ -57,6 +59,10 @@ class App extends Component {
 			.catch(error => this.setState({error, isLoading: false}));
 	}
 
+	/**
+	 * Get current game state from server
+	 * Server responds with an integer, one of the game states in Game.State
+	 */
 	fetchState() {
     return fetchResponseJson(API+STATE_QUERY).then((response) => {
 				if (response !== false && Game.StateName[response]) {
@@ -68,6 +74,23 @@ class App extends Component {
 			.then(data => this.setState({ state: data, isLoading: false }))
 			.catch(error => {this.setState({ error, isLoading: false })});
 	}
+
+	/**
+	 * Get current game type from server
+	 * Server should respond with current game type, and its settings
+	 */
+	fetchGame() {
+		return fetchResponseJson(API+GAME_QUERY).then((response) => {
+				if (response !== false && response.isObject) {
+					return response;
+				} else {
+					throw new Error('Something went wrong getting game. Response:'+ JSON.stringify(response));
+				}
+			})
+			.then(data => this.setState({ game: data, isLoading: false }))
+			.catch(error => {this.setState({ error, isLoading: false })});
+	}
+
 }
 App.defaultProps = {
 	state: Game.State.IDLE,

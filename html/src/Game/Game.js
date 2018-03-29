@@ -11,6 +11,7 @@ class Game extends Component {
 	propTypes: {
       state:          React.PropTypes.number,
 			type:           React.PropTypes.string,
+			config:         React.PropTypes.object,
       stateHandler:   React.PropTypes.func
   }
 	render() {
@@ -19,7 +20,7 @@ class Game extends Component {
 
 		return (<div className={className}>
 			{state}
-			{this.renderConfig(this.props.type)}
+			{this.renderConfig(this.props.type, this.props.config)}
 			{this.renderRun()}
 			{this.renderControls()}
 		</div>);
@@ -28,7 +29,7 @@ class Game extends Component {
 	/**
 	 * Render the configuration panel
 	 */
-	renderConfig(type) {
+	renderConfig(type, config) {
 		if(this.props.state !== Game.State.IDLE) return;
 		switch(type)
 		{
@@ -45,7 +46,7 @@ class Game extends Component {
 		switch(this.props.type)
 		{
 			default:
-				return <GameRun/>;
+				return <GameRun value={this.props.config}/>;
 		}
 	}
 

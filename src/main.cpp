@@ -7,7 +7,8 @@
 
 #include <ArduinoOTA.h>		 // Wireless code updates
 
-#include <ESP8266WebServer.h>	// Web server
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
 #include <WiFiManager.h>   // Wifi config magic
 
