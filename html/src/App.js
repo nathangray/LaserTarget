@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+import * as GAME from './Game/constants.js';
 import Game from './Game/Game.js';
 
 const API = '/';
@@ -65,7 +66,7 @@ class App extends Component {
 	 */
 	fetchState() {
     return fetchResponseJson(API+STATE_QUERY).then((response) => {
-				if (response !== false && Game.StateName[response]) {
+				if (response !== false && GAME.StateName[response]) {
 					return response;//parseInt(response, 10);
 				} else {
 					throw new Error('Something went wrong getting state. Response:'+ JSON.stringify(response));
@@ -81,7 +82,8 @@ class App extends Component {
 	 */
 	fetchGame() {
 		return fetchResponseJson(API+GAME_QUERY).then((response) => {
-				if (response !== false && response.isObject) {
+			console.log(response);
+				if (response !== false) {
 					return response;
 				} else {
 					throw new Error('Something went wrong getting game. Response:'+ JSON.stringify(response));
@@ -93,7 +95,7 @@ class App extends Component {
 
 }
 App.defaultProps = {
-	state: Game.State.IDLE,
+	state: GAME.State.IDLE,
 	name: "Game Type"
 }
 

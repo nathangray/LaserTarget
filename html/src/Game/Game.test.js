@@ -5,10 +5,11 @@ import {shallow, mount, render} from 'enzyme'
 import Game from './Game.js';
 import GameConfig from './GameConfig.js';
 import GameRun from './GameRun.js';
+import * as GAME from './constants.js';
 
 
 it("Shows config when idle", async () => {
-	const wrapper = mount(<Game state={Game.State.IDLE}/>);
+	const wrapper = mount(<Game state={GAME.State.IDLE}/>);
 
 	//console.log(wrapper.html());
 
@@ -18,7 +19,7 @@ it("Shows config when idle", async () => {
 });
 
 it("Shows status when running", async () => {
-	const wrapper = mount(<Game state={Game.State.PLAY}/>)
+	const wrapper = mount(<Game state={GAME.State.PLAY}/>)
 
 	// Running should show run, not config
 	expect(wrapper.find(GameConfig).length).toBe(0);

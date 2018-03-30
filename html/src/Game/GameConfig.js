@@ -1,7 +1,7 @@
 /**
  * Base Component for rendering a Game Configuration
  */
-import React, { Com	ponent } from 'react';
+import React, { Component } from 'react';
 var FontAwesome = require('react-fontawesome');
 
 class GameConfig extends Component {

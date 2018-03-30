@@ -2,7 +2,7 @@
  * Component for rendering game controls
  */
 import React from 'react';
-import Game from './Game.js';
+import * as GAME from './constants.js';
 var FontAwesome = require('react-fontawesome');
 
 class Controls extends React.Component {
@@ -20,24 +20,24 @@ class Controls extends React.Component {
 
 	render() {
 		switch (this.props.state)	{
-			case Game.State.IDLE:
+			case GAME.State.IDLE:
 				return <div className="controls">
-						<FontAwesome name='play' data-state={Game.State.PLAY} onClick={this.changeHandler}/>
+						<FontAwesome name='play' data-state={GAME.State.PLAY} onClick={this.changeHandler}/>
 					</div>;
-			case Game.State.STARTING:
-			case Game.State.PLAY:
+			case GAME.State.STARTING:
+			case GAME.State.PLAY:
 				return <div className="controls">
-						<FontAwesome name='stop' data-state={Game.State.END}  onClick={this.changeHandler}/>
-						<FontAwesome name='repeat' data-state={Game.State.IDLE} onClick={this.changeHandler}/>
+						<FontAwesome name='stop' data-state={GAME.State.END}  onClick={this.changeHandler}/>
+						<FontAwesome name='repeat' data-state={GAME.State.IDLE} onClick={this.changeHandler}/>
 					</div>;
-			case Game.State.END:
+			case GAME.State.END:
 				return <div className="controls">
-					<FontAwesome name='cogs' data-state={Game.State.IDLE} onClick={this.changeHandler} />
-					<FontAwesome name='repeat' data-state={Game.State.PLAY} onClick={this.changeHandler}/>
+					<FontAwesome name='cogs' data-state={GAME.State.IDLE} onClick={this.changeHandler} />
+					<FontAwesome name='repeat' data-state={GAME.State.PLAY} onClick={this.changeHandler}/>
 				</div>;
 			default:
 				return <div className="controls">
-					<FontAwesome name='add' data-state={Game.State.IDLE} onClick={this.changeHandler} />
+					<FontAwesome name='add' data-state={GAME.State.IDLE} onClick={this.changeHandler} />
 				</div>;
 		}
 	}
