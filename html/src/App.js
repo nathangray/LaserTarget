@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-
+import APP from './Constants.js';
 import * as GAME from './Game/constants.js';
 import Game from './Game/Game.js';
 
 const API = '/';
 const STATE_QUERY = 'state';
 const GAME_QUERY = 'game';
+
+let ws = null;
 
 class App extends Component {
 
@@ -16,8 +18,9 @@ class App extends Component {
 		super(props);
 		this.state = {
 			state: props.state,
-			game: {type: 'None', config: {time:'yarp'}},
-			isLoading: false,
+			game: {type: 'None', config: {}},
+			isLoading: true,
+			isConnected: false,
 			error: null
 		};
 	}
@@ -48,16 +51,64 @@ class App extends Component {
     );
   }
 	componentDidMount() {
+		this.connectWS();
 		this.fetchState();
+		this.setState({isLoading: false});
   }
 	/**
 	 * Handle requests (from client) to change the current game state
 	 * @param int state One of the state constants
 	 */
 	stateChangeHandler(state) {
-		putJson(API+STATE_QUERY, state)
-			.then(this.fetchState())
-			.catch(error => this.setState({error, isLoading: false}));
+		try {
+			ws.send(JSON.stringify({state:state}));
+		} catch (error) {
+			this.setState({error: error});
+		}
+	}
+
+	/**
+	 * Set up WebSocket
+	 */
+	connectWS(e) {
+		// Set up WebSocket
+		if(ws) {
+			ws.close();
+		}
+		ws = new WebSocket(APP.WS_URL);
+		ws.onopen = () => {
+			this.setState({isConnected: true});
+		};
+		ws.onerror = (e) => {
+			console.error('WS error', e);
+			this.setState({error: e});
+		}
+		ws.onclose = (e) => {
+			console.log('WS closed', e.code, e.reason);
+			this.setState({isConnected: false});
+
+			// Reconnect
+			window.setTimeout(() => {
+				this.connectWS();
+			},APP.WS_RECONNECT);
+		}
+		ws.onmessage = (e) => {
+			this.handleWsMessage(e);
+		}
+	}
+
+	handleWsMessage(e) {
+		console.log("WS message: ", e.data);
+		var data = {};
+		try {
+			data = JSON.parse(e.data) || {};
+		} catch (error) {
+			return this.setState({error});
+		}
+		var state = {error: null};
+		if(data.state) state.state = data.state;
+		if(data.game) state.game = data.game;
+		this.setState(state);
 	}
 
 	/**
@@ -72,8 +123,8 @@ class App extends Component {
 					throw new Error('Something went wrong getting state. Response:'+ JSON.stringify(response));
 				}
 			})
-			.then(data => this.setState({ state: data, isLoading: false }))
-			.catch(error => {this.setState({ error, isLoading: false })});
+			.then(data => this.setState({ state: data}))
+			.catch(error => {this.setState({ error})});
 	}
 
 	/**
@@ -89,8 +140,8 @@ class App extends Component {
 					throw new Error('Something went wrong getting game. Response:'+ JSON.stringify(response));
 				}
 			})
-			.then(data => this.setState({ game: data, isLoading: false }))
-			.catch(error => {this.setState({ error, isLoading: false })});
+			.then(data => this.setState({ game: data}))
+			.catch(error => {this.setState({ error })});
 	}
 
 }
@@ -107,19 +158,6 @@ const fetchResponseJson = async (url) => {
     // You can introduce here an artificial delay, both Promises and async/await will wait until the function returns
     // await sleep(DELAY_MS)
     return responseJson;
-}
-
-// JSON put
-const putJson = async (url, data) => {
-	const response = fetch(url, {
-		body: JSON.stringify(data),
-		cache: 'no-cache',
-		headers: {
-			'content-type': 'application/json'
-		},
-		method: 'PUT'
-	}).then(response => response.json());
-	return response;
 }
 
 export default App;

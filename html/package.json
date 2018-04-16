@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && rm build/static/js/*.map",
+    "build": "react-scripts build && rm build/static/js/*.map && rm build/static/css/*.map",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
