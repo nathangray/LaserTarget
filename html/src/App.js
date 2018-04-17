@@ -115,7 +115,7 @@ class App extends Component {
 			return this.setState({error});
 		}
 		var state = {error: null};
-		if(data.state) state.state = data.state;
+		if(typeof data.state !== "undefined") state.state = data.state;
 		if(data.game) state.game = data.game;
 		this.setState(state);
 	}

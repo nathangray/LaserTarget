@@ -7,10 +7,10 @@ var FontAwesome = require('react-fontawesome');
 
 class GameSelection extends React.Component {
 	propTypes: {
-    state:      React.PropTypes.number,
+		state:      React.PropTypes.number,
 		value:      React.PropTypes.string,
-    onChange:   React.PropTypes.func
-  }
+		onChange:   React.PropTypes.func
+	}
 
 	constructor(props) {
     super(props);
