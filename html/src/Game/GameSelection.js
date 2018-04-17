@@ -7,9 +7,9 @@ var FontAwesome = require('react-fontawesome');
 
 class GameSelection extends React.Component {
 	propTypes: {
-      state:      React.PropTypes.number,
-			value:      React.PropTypes.string,
-      onChange:   React.PropTypes.func
+    state:      React.PropTypes.number,
+		value:      React.PropTypes.string,
+    onChange:   React.PropTypes.func
   }
 
 	constructor(props) {
@@ -19,9 +19,12 @@ class GameSelection extends React.Component {
   }
 
 	render() {
+		if((this.props.state !== GAME.State.IDLE) && this.props.value)
+		{
+			return GAME.TypeInfo[this.props.value].name;
+		}
 		return (
-			<select id='game_type' value={this.props.game}
-				readOnly={(this.props.state !== GAME.State.IDLE)}
+			<select id='game_type' value={this.props.value}
 				onChange={this.handleChange}
 			>
 		 	{this.buildOptions()}
@@ -30,7 +33,7 @@ class GameSelection extends React.Component {
 	}
 	buildOptions() {
 		var options = [];
-		if(!this.props.game || !GAME.Type[this.props.game])
+		if(!this.props.value || !GAME.Type[this.props.value])
 		{
 			options.push(<option key='select' value=''>Select</option>);
 		}

@@ -26,11 +26,6 @@ class App extends Component {
 	}
 
   render() {
-/*
-    if (this.state.error) {
-      return <p>Error:<br />{this.state.error.message}</p>;
-    }*/
-
     if (this.state.isLoading) {
       return <p>Loading ...</p>;
     }
@@ -46,6 +41,7 @@ class App extends Component {
 					type={this.state.game.type}
 					config={this.state.game.config}
 					stateHandler={(state) => this.stateChangeHandler(state)}
+					typeHandler={(state) => this.typeChangeHandler(state)}
 				/>
       </div>
     );
@@ -62,6 +58,19 @@ class App extends Component {
 	stateChangeHandler(state) {
 		try {
 			ws.send(JSON.stringify({state:state}));
+		} catch (error) {
+			this.setState({error: error});
+		}
+	}
+
+	/**
+	 * Handle user wants to change the current game type - tell server
+	 *
+	 * @param string type One of the game types
+	 */
+	typeChangeHandler(type) {
+		try {
+			ws.send(JSON.stringify({game: {type: type}}));
 		} catch (error) {
 			this.setState({error: error});
 		}

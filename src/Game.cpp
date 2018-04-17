@@ -1,20 +1,33 @@
 
 #ifndef Game_h
-#include <Game.h>
+#include "Game.h"
 #endif
 
 Game::Game(void)
-{}
-void Game::setState(int _state)
 {
-	state = _state;
+	state = State::IDLE;
+	init();
 }
-int Game::getState()
+
+void Game::init() {
+	Serial.printf("Initted [%s]\n", getType().c_str());
+}
+
+void Game::start() {
+	state = State::STARTING;
+}
+
+void Game::setState(State _state)
+{
+	// Set specifically to always be Idle for this base game
+	state = State::IDLE;
+}
+Game::State Game::getState()
 {
 	return state;
 }
 
-String Game::getStatus()
+void Game::getStatus(JsonObject& game)
 {
-	return "{}";
+	game["type"] = getType();
 }

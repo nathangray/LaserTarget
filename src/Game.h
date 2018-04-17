@@ -6,6 +6,7 @@
 #define Game_h
 
 #include "Arduino.h"
+#include <ArduinoJson.h>
 
 #ifndef Team_h
 #include <Team.h>
@@ -13,19 +14,28 @@
 
 class Game {
 public:
+	enum class State : int {IDLE=0, STARTING=1, PLAY=2, ENDING=10, END=11};
 	Game();
 	virtual ~Game(){}
 
-	void init();
-	void start();
-	int getState();
-	void setState(int state);
+	virtual void init();
+	virtual void start();
+	virtual inline String getType()
+	{
+		return "NONE";
+	}
+	virtual State getState();
+	virtual inline void setState(int _state) {
+		state = static_cast<State>(_state);
+	}
 
-	String getStatus();
+	virtual void setState(State _state);
+	virtual void getStatus(JsonObject& game);
 
-private:
-	int state = 0;
+protected:
+	State state = State::IDLE;
 	Team* teams;
 };
+
 
  #endif

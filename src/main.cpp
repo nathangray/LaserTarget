@@ -7,6 +7,7 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <Game.h>
+#include <Game/Domination.h>
 
 // Webserver stuff
 AsyncWebServer server(80);
@@ -20,27 +21,55 @@ const char* http_username = "admin";
 const char* http_password = "admin";
 
 // Game
-Game game;
+Game* game = new Game();
 
 /**
  * Get the current game status
  */
-JsonObject& getGameStatus()
+String getGameStatus()
 {
 	StaticJsonBuffer<200> jsonBuffer;
 	JsonObject& root = jsonBuffer.createObject();
-	root["state"] = game.getState();
-	root["game"] = game.getStatus();
-	root.prettyPrintTo(Serial);
-	return root;
+	root["state"] = (int)game->getState();
+	JsonObject& gamestatus = root.createNestedObject("game");
+	game->getStatus(gamestatus);
+	
+	String json;
+	root.printTo(json);
+	return json;
 }
 
 void setGameState(int state)
 {
-	game.setState(state);
-  String json;
-	getGameStatus().printTo(json);
-	ws.textAll(json);
+	game->setState(state);
+	ws.textAll(getGameStatus());
+}
+
+/**
+ * Process a game JSON object from client
+ */
+void processGame(JsonObject& game_info)
+{
+	String type = game_info.get<String>("type");
+	String old_type = game->getType();
+	if(game->getState() == Game::State::IDLE)
+	{
+		delete game;
+		if(type == "DOMINATION") {
+			Serial.println("Creating new Domination");
+			game = new Domination();
+		} else {
+			game = new Game();
+		}
+		// If game type changed, notify all
+		if(old_type != game->getType())
+		{
+Serial.printf("Changed Old type: %s New type: %s", old_type.c_str(), game->getType().c_str());
+			ws.textAll(getGameStatus());
+		}
+	}
+	Serial.printf("Idle: %d\n", Game::State::IDLE);
+Serial.printf("State: %d Old type: %s  [%s]  New type: %s",game->getState(), old_type.c_str(), type.c_str(), game->getType().c_str());
 }
 
 /**
@@ -53,6 +82,11 @@ void processWebsocket(JsonObject& msg)
 	{
 		setGameState(msg.get<int>("state"));
 	}
+	JsonVariant game = msg.get<JsonVariant>("game");
+	if(game.success())
+	{
+		processGame(game.as<JsonObject>());
+	}
 }
 /**
  * Handle websocket events
@@ -60,9 +94,7 @@ void processWebsocket(JsonObject& msg)
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
     Serial.printf("ws[%s][%u] connect\n", server->url(), client->id());
-    String json;
-		getGameStatus().printTo(json);
-		client->text(json);
+		client->text(getGameStatus());
   } else if(type == WS_EVT_DISCONNECT){
     Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
   } else if(type == WS_EVT_ERROR){
@@ -86,7 +118,14 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 
       if(info->opcode == WS_TEXT) {
 				JsonObject& root = jsonBuffer.parseObject(msg);
-        processWebsocket(root);
+        if(root.success())
+				{
+					processWebsocket(root);
+				}
+				else
+				{
+					Serial.printf("Unable to parse JSON:\n%s\n", msg.c_str());
+				}
 			}
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
@@ -152,7 +191,7 @@ void setup(){
 
 	// Get game state
 	server.on("/state", HTTP_GET, [](AsyncWebServerRequest *request){
-		request->send(200, "text/plain", String(game.getState()));
+		request->send(200, "text/plain", String((int)game->getState()));
 	});
 
 

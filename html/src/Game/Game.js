@@ -11,10 +11,11 @@ import * as GAME from './constants.js';
 
 class Game extends Component {
 	propTypes: {
-      state:          React.PropTypes.number,
-			type:           React.PropTypes.string,
-			config:         React.PropTypes.object,
-      stateHandler:   React.PropTypes.func
+    state:              React.PropTypes.number,
+		type:               React.PropTypes.string,
+		config:             React.PropTypes.object,
+    stateHandler:       React.PropTypes.func,
+		typeHandler:        React.PropTypes.func,
   }
 	render() {
 		let state = GAME.StateName[this.props.state] || 'Unknown';
@@ -22,7 +23,11 @@ class Game extends Component {
 		let className = "Game STATE_" + state.toUpperCase();
 
 		return (<div className={className}>
-			<GameSelection value={this.props.type} state={this.props.state}/> - {state}<br />
+			<GameSelection
+				value={this.props.type}
+				state={this.props.state}
+				onChange={this.props.typeHandler}
+			/> - {state}<br />
 			{game.description}
 			{this.renderConfig(this.props.type, this.props.config)}
 			{this.renderRun()}

@@ -19,8 +19,8 @@ export const State = {
 };
 
  // Different types of game
- export const Type = {
-	 DOMINATION: 'DOMINATION',
+export const Type = {
+	DOMINATION: 'DOMINATION',
 	// RANDOM: 'RANDOM'
  }
 export const TypeInfo = {
