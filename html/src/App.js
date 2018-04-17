@@ -29,8 +29,13 @@ class App extends Component {
     if (this.state.isLoading) {
       return <p>Loading ...</p>;
     }
+		var className = "App";
+		if(!this.state.isConnected)
+		{
+			className += " not-connected";
+		}
     return (
-      <div className="App">
+      <div className={className}>
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
           <h1 className="App-title">Laser Targets</h1>
