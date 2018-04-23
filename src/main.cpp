@@ -1,11 +1,27 @@
+
+// All nodes
+#include <ArduinoOTA.h>
+#ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <ArduinoOTA.h>
+#endif
+#ifdef ARDUINO_ARCH_ESP32
+#include <WiFi.h>
+#endif
+
+// Root / Server
 #include <FS.h>
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+
+// Client / Leaf
+#include <ESP8266HTTPClient.h>
+#include <WebSocketsClient.h>
+
+// Game
+#include <H4.h>
 #include <Game.h>
 #include <Game/Domination.h>
 
@@ -13,12 +29,18 @@
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
+WebSocketsClient webSocket;
+
 // Network
 const char* ssid = "Gray";
 const char* password = "nathangray";
 const char* hostName = "LaserTarget";
 const char* http_username = "admin";
 const char* http_password = "admin";
+
+// Node
+enum Role : byte {ROOT, LEAF};
+Role role;
 
 // Game
 Game* game = new Game();
@@ -33,7 +55,7 @@ String getGameStatus()
 	root["state"] = (int)game->getState();
 	JsonObject& gamestatus = root.createNestedObject("game");
 	game->getStatus(gamestatus);
-	
+
 	String json;
 	root.printTo(json);
 	return json;
@@ -56,7 +78,6 @@ void processGame(JsonObject& game_info)
 	{
 		delete game;
 		if(type == "DOMINATION") {
-			Serial.println("Creating new Domination");
 			game = new Domination();
 		} else {
 			game = new Game();
@@ -64,12 +85,9 @@ void processGame(JsonObject& game_info)
 		// If game type changed, notify all
 		if(old_type != game->getType())
 		{
-Serial.printf("Changed Old type: %s New type: %s", old_type.c_str(), game->getType().c_str());
 			ws.textAll(getGameStatus());
 		}
 	}
-	Serial.printf("Idle: %d\n", Game::State::IDLE);
-Serial.printf("State: %d Old type: %s  [%s]  New type: %s",game->getState(), old_type.c_str(), type.c_str(), game->getType().c_str());
 }
 
 /**
@@ -89,7 +107,7 @@ void processWebsocket(JsonObject& msg)
 	}
 }
 /**
- * Handle websocket events
+ * Handle websocket events (as server)
  */
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   if(type == WS_EVT_CONNECT){
@@ -164,12 +182,69 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   }
 }
 
-void setup(){
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  WiFi.hostname(hostName);
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(hostName);
+void clientWsEvent(WStype_t type, uint8_t * payload, size_t length) {
+
+	switch(type) {
+		case WStype_DISCONNECTED:
+			Serial.printf("[WSc] Disconnected!\n");
+			break;
+		case WStype_CONNECTED: {
+			Serial.printf("[WSc] Connected to url: %s\n", payload);
+
+			// send message to server when Connected
+			char stringBuffer16[16];
+			sprintf(stringBuffer16,"{node:%04x}", ESP.getChipId());
+			webSocket.sendTXT(stringBuffer16);
+		}
+			break;
+		case WStype_TEXT:
+			Serial.printf("[WSc] get text: %s\n", payload);
+
+			// message came from server
+			// webSocket.sendTXT("message here");
+			break;
+		case WStype_BIN:
+			Serial.printf("[WSc] get binary length: %u\n", length);
+			hexdump(payload, length);
+
+			// message came from server
+			// send data to server
+			// webSocket.sendBIN(payload, length);
+			break;
+	}
+}
+/**
+ * Connect and set up as a simple leaf node
+ */
+void connectLeaf()
+{
+	role = LEAF;
+
+	WiFi.begin(hostName);
+	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.printf("Connect failed!\n");
+    WiFi.disconnect(false);
+    delay(1000);
+    WiFi.begin(hostName);
+  }
+
+	webSocket.begin("192.168.4.1", 80, "/ws");
+	webSocket.onEvent(clientWsEvent);
+
+	// try ever 5000 again if connection has failed
+	webSocket.setReconnectInterval(5000);
+}
+
+/**
+ * Connect and set up as the root (server)
+ */
+void connectRoot()
+{
+	role = ROOT;
+	WiFi.disconnect();
+	Serial.println("I'm the server");
+	/*
+	WiFi.mode(WIFI_AP_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.printf("STA: Failed!\n");
@@ -177,8 +252,17 @@ void setup(){
     delay(1000);
     WiFi.begin(ssid, password);
   }
+	if(!(uint32_t)WiFi.localIP())
+	*/
+	{
+		WiFi.disconnect();
+		WiFi.mode(WIFI_AP);
+	}
+  WiFi.softAP(hostName);
 
-  MDNS.addService("http","tcp",80);
+	Serial.print("Soft-AP IP: "); Serial.println(WiFi.softAPIP());
+	MDNS.begin(hostName);
+	MDNS.addService("http","tcp",80);
 
   SPIFFS.begin();
 
@@ -188,13 +272,16 @@ void setup(){
   server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", String(ESP.getFreeHeap()));
   });
+	server.on("/ip", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(WiFi.localIP() ? WiFi.localIP().toString() : WiFi.softAPIP().toString()));
+
+    Serial.println(String(WiFi.localIP() ? WiFi.localIP().toString() : WiFi.softAPIP().toString()));
+  });
 
 	// Get game state
 	server.on("/state", HTTP_GET, [](AsyncWebServerRequest *request){
 		request->send(200, "text/plain", String((int)game->getState()));
 	});
-
-
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
@@ -259,7 +346,48 @@ void setup(){
       Serial.printf("BodyEnd: %u\n", total);
   });
   server.begin();
+
+}
+
+/**
+ * Set up the WiFi and determine if we're the server or just a client
+ */
+void connect() {
+	// Root acts as a leaf too
+
+	// Check to see if node network is up
+	int n = WiFi.scanNetworks();
+	for(int i = 0; i < n; i++)
+	{
+		if(WiFi.SSID(i) == hostName)
+		{
+			// Already there
+			return connectLeaf();
+		}
+	}
+
+	connectRoot();
+}
+
+void setup(){
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+	connect();
+
 }
 
 void loop(){
+	if(role == LEAF)
+	{
+	  webSocket.loop();
+
+		// Ping server
+		static unsigned long last = 0;
+	  if(abs(millis() - last) > 5000) {
+			char stringBuffer80[80];
+			sprintf(stringBuffer80,"{node:%04x, tick:%d}", ESP.getChipId(), millis());
+    	webSocket.sendTXT(stringBuffer80);
+	    last = millis();
+	  }
+	}
 }

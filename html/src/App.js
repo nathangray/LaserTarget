@@ -21,7 +21,8 @@ class App extends Component {
 			game: {type: 'None', config: {}},
 			isLoading: true,
 			isConnected: false,
-			error: null
+			error: null,
+			heartbeat: null
 		};
 	}
 
