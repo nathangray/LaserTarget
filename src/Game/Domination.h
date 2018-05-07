@@ -17,7 +17,8 @@
 
 class Domination : public Game {
 public:
-	Domination() : Game() {};
+
+	Domination(std::vector<Node> &_nodes) : Game(_nodes) {};
 	virtual void init();
 	inline String getType() {
 		return "DOMINATION";

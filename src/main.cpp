@@ -19,11 +19,15 @@
 // Client / Leaf
 #include <ESP8266HTTPClient.h>
 #include <WebSocketsClient.h>
+// Blinkenlight strips
+// Neopixel strip must be plugged into RX pin (RXD0 / GPIO3)
+#include <ws2812_i2s.h>
 
 // Game
 #include <H4.h>
 #include <Game.h>
 #include <Game/Domination.h>
+#include <Node.h>
 
 // Webserver stuff
 AsyncWebServer server(80);
@@ -43,18 +47,43 @@ enum Role : byte {ROOT, LEAF};
 Role role;
 
 // Game
-Game* game = new Game();
+#define NODE_COUNT 5 // Including the "server" node
+std::vector<Node> nodes;
+Game* game = new Game(nodes);
+
+/**
+ * Get a node from the list by its ID
+ */
+Node& getNode(uint32_t id) {
+	Serial.print("Looking for "); Serial.println(id, HEX);
+	uint i = 0;
+	for(; i < nodes.size(); i++) {
+		if(id == nodes[i].getID()) {
+			Serial.printf("Node %d is %04x\n", i, id);
+			return nodes[i];
+		}
+			Serial.printf("Node %d is %x\n", i, nodes[i].getID());
+	}
+	nodes.push_back(Node(id));
+	return nodes[i];
+}
 
 /**
  * Get the current game status
  */
 String getGameStatus()
 {
-	StaticJsonBuffer<200> jsonBuffer;
+	StaticJsonBuffer<1024> jsonBuffer;
 	JsonObject& root = jsonBuffer.createObject();
 	root["state"] = (int)game->getState();
 	JsonObject& gamestatus = root.createNestedObject("game");
 	game->getStatus(gamestatus);
+
+	JsonArray& node_object = root.createNestedArray("nodes");
+	for(uint node_idx = 0; node_idx < nodes.size(); node_idx++) {
+		Serial.printf("Getting status for node #%d [%x]\n", node_idx, nodes[node_idx].getID());
+		nodes[node_idx].getStatus(node_object.createNestedObject());
+	}
 
 	String json;
 	root.printTo(json);
@@ -78,10 +107,11 @@ void processGame(JsonObject& game_info)
 	{
 		delete game;
 		if(type == "DOMINATION") {
-			game = new Domination();
+			game = new Domination(nodes);
 		} else {
-			game = new Game();
+			game = new Game(nodes);
 		}
+
 		// If game type changed, notify all
 		if(old_type != game->getType())
 		{
@@ -90,11 +120,21 @@ void processGame(JsonObject& game_info)
 	}
 }
 
-/**
- * Process a websocket message from a browser
- */
-void processWebsocket(JsonObject& msg)
+void processNodeMsg(JsonObject& msg, AsyncWebSocketClient* client)
 {
+		Node &node = getNode(strtoul(msg.get<char*>("node"), NULL, 0));
+		node.setClient(client);
+}
+/**
+ * Process a websocket message from a client - either node or browser
+ */
+void processWebsocket(JsonObject& msg, AsyncWebSocketClient * client)
+{
+	JsonVariant node_id = msg["node"];
+	if(node_id.success()) {
+		Serial.printf("Got socket msg from node %s\n", node_id.as<char*>());
+		processNodeMsg(msg, client);
+	}
 	JsonVariant state = msg["state"];
 	if(state.success())
 	{
@@ -106,6 +146,19 @@ void processWebsocket(JsonObject& msg)
 		processGame(game.as<JsonObject>());
 	}
 }
+
+/**
+ * Process a websocket message from the server on a leaf node
+ */
+void processWebsocket(JsonObject& msg) {
+	Node& node = nodes[0];
+	JsonVariant state = msg["state"];
+	if(state.success())
+	{
+		node.setState(msg.get<int>("state"));
+	}
+}
+
 /**
  * Handle websocket events (as server)
  */
@@ -138,7 +191,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 				JsonObject& root = jsonBuffer.parseObject(msg);
         if(root.success())
 				{
-					processWebsocket(root);
+					processWebsocket(root, client);
 				}
 				else
 				{
@@ -184,22 +237,30 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 
 void clientWsEvent(WStype_t type, uint8_t * payload, size_t length) {
 
+	StaticJsonBuffer<200> jsonBuffer;
+	JsonObject& root = jsonBuffer.parseObject(payload);
 	switch(type) {
 		case WStype_DISCONNECTED:
 			Serial.printf("[WSc] Disconnected!\n");
 			break;
-		case WStype_CONNECTED: {
+		case WStype_CONNECTED:
 			Serial.printf("[WSc] Connected to url: %s\n", payload);
 
 			// send message to server when Connected
 			char stringBuffer16[16];
 			sprintf(stringBuffer16,"{node:%04x}", ESP.getChipId());
 			webSocket.sendTXT(stringBuffer16);
-		}
 			break;
 		case WStype_TEXT:
 			Serial.printf("[WSc] get text: %s\n", payload);
-
+			if(root.success())
+			{
+				processWebsocket(root);
+			}
+			else
+			{
+				Serial.printf("Unable to parse JSON:\n%s\n", payload);
+			}
 			// message came from server
 			// webSocket.sendTXT("message here");
 			break;
@@ -260,7 +321,6 @@ void connectRoot()
 	}
   WiFi.softAP(hostName);
 
-	Serial.print("Soft-AP IP: "); Serial.println(WiFi.softAPIP());
 	MDNS.begin(hostName);
 	MDNS.addService("http","tcp",80);
 
@@ -353,7 +413,9 @@ void connectRoot()
  * Set up the WiFi and determine if we're the server or just a client
  */
 void connect() {
+	nodes.clear();
 	// Root acts as a leaf too
+	nodes.push_back(Node(ESP.getChipId()));
 
 	// Check to see if node network is up
 	int n = WiFi.scanNetworks();

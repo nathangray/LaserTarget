@@ -3,14 +3,20 @@
 #include "Game.h"
 #endif
 
-Game::Game(void)
+Game::Game(std::vector<Node> &_nodes)
 {
 	state = State::IDLE;
+	nodes = _nodes;
 	init();
 }
 
 void Game::init() {
 	Serial.printf("Initted [%s]\n", getType().c_str());
+
+	for( auto &node: nodes)
+	{
+		node.setState(Node::State::IDLE);
+	}
 }
 
 void Game::start() {
@@ -30,4 +36,14 @@ Game::State Game::getState()
 void Game::getStatus(JsonObject& game)
 {
 	game["type"] = getType();
+	if(winner != NULL) {
+		game["winner"] = winner->id;
+	}
+	JsonArray& teamList = game.createNestedArray("teams");
+	for(int i = 0; i < TEAM_COUNT_MAX; i++)
+	{
+		JsonObject& teamStatus = teamList.createNestedObject();
+		teamStatus["id"] = teams[i].id;
+		teamStatus["score"] = teams[i].score;
+	}
 }
