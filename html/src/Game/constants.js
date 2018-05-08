@@ -24,6 +24,10 @@ export const Type = {
 	// RANDOM: 'RANDOM'
  }
 export const TypeInfo = {
+	NONE: {
+		name: 'None',
+		description: 'Select a game type'
+	},
  	DOMINATION: {
  		name: 'Domination',
  		description: 'Fight for control'

@@ -42,6 +42,11 @@ const char* hostName = "LaserTarget";
 const char* http_username = "admin";
 const char* http_password = "admin";
 
+// Set up lights
+WS2812 ledstrip;
+Pixel_t Black = {0,0,0};
+
+
 // Node
 enum Role : byte {ROOT, LEAF};
 Role role;
@@ -92,6 +97,7 @@ String getGameStatus()
 
 void setGameState(int state)
 {
+	Serial.printf("%s setGameState(%d)\n", game->getType().c_str(), state);
 	game->setState(state);
 	ws.textAll(getGameStatus());
 }
@@ -105,7 +111,6 @@ void processGame(JsonObject& game_info)
 	String old_type = game->getType();
 	if(game->getState() == Game::State::IDLE)
 	{
-		delete game;
 		if(type == "DOMINATION") {
 			game = new Domination(nodes);
 		} else {
@@ -118,6 +123,7 @@ void processGame(JsonObject& game_info)
 			ws.textAll(getGameStatus());
 		}
 	}
+	Serial.printf("Created %s\n", game->getType().c_str());
 }
 
 void processNodeMsg(JsonObject& msg, AsyncWebSocketClient* client)

@@ -23,6 +23,7 @@ void Node::setState(State _state) {
 	{
 		client->printf("{state:%d}", state);
 	}
+	Serial.printf("Node %x state set to %d", id, state);
 }
 void Node::getStatus(JsonObject& node) {
 	node["id"] = id;

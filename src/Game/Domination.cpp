@@ -9,6 +9,14 @@ void Domination::init() {
 	Serial.println("WTF?");
 	Serial.println(Domination::getType());
 }
+void Domination::setState(int _state) {
+	Game::setState(_state);
+	Serial.printf("Domination setting state to %d", _state);
+	for( auto &node: nodes)
+ 	{
+ 		node.setState(_state);
+ 	}
+}
 /*
 JsonObject& Domination::getStatus()
 {

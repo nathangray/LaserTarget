@@ -23,9 +23,7 @@ public:
 	inline String getType() {
 		return "DOMINATION";
 	}
-	inline void setState(State _state) {
-		return Game::setState((int)_state);
-	}
+	void setState(int _state);
 	//JsonObject& getStatus();
 };
 

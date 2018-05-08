@@ -11,8 +11,6 @@ Game::Game(std::vector<Node> &_nodes)
 }
 
 void Game::init() {
-	Serial.printf("Initted [%s]\n", getType().c_str());
-
 	for( auto &node: nodes)
 	{
 		node.setState(Node::State::IDLE);
