@@ -23,7 +23,9 @@ public:
 	inline String getType() {
 		return "DOMINATION";
 	}
-	void setState(int _state);
+	void setState(State _state);
+	void shot(Node &node, int team_id, int damage);
+	void tick();
 	//JsonObject& getStatus();
 };
 

@@ -19,12 +19,18 @@
 // Client / Leaf
 #include <ESP8266HTTPClient.h>
 #include <WebSocketsClient.h>
-// Blinkenlight strips
-// Neopixel strip must be plugged into RX pin (RXD0 / GPIO3)
-#include <ws2812_i2s.h>
+
+// Timer
+#include <H4.h>
+
+#ifndef Lights_h
+#include "Lights.h"
+#endif
+
+// IR Receiver
+#include "IR.h"
 
 // Game
-#include <H4.h>
 #include <Game.h>
 #include <Game/Domination.h>
 #include <Node.h>
@@ -42,19 +48,20 @@ const char* hostName = "LaserTarget";
 const char* http_username = "admin";
 const char* http_password = "admin";
 
-// Set up lights
-WS2812 ledstrip;
-Pixel_t Black = {0,0,0};
-
-
 // Node
 enum Role : byte {ROOT, LEAF};
 Role role;
 
 // Game
 #define NODE_COUNT 5 // Including the "server" node
+#define NODE_TIMEOUT 15000 // 15 seconds
+#define NODE_UPDATE_SPEED 10000 // Every second we tell the nodes what's up
 std::vector<Node> nodes;
 Game* game = new Game(nodes);
+
+// Timers
+H4 h4;
+H4_TIMER node_update;
 
 /**
  * Get a node from the list by its ID
@@ -100,6 +107,21 @@ void setGameState(int state)
 	Serial.printf("%s setGameState(%d)\n", game->getType().c_str(), state);
 	game->setState(state);
 	ws.textAll(getGameStatus());
+
+	Serial.printf("%s getState()=%d\n", game->getType().c_str(), (int)game->getState());
+	switch(game->getState())
+	{
+		case Game::State::PLAY:
+			node_update = h4.every(GAME_TICK, []() {
+				ws.textAll(getGameStatus());
+				// End if no longer playing
+				if(game->getState() == Game::State::END) h4.never(node_update);
+			});
+			break;
+		case Game::State::IDLE:
+		case Game::State::END:
+			h4.never(node_update);
+	}
 }
 
 /**
@@ -126,10 +148,18 @@ void processGame(JsonObject& game_info)
 	Serial.printf("Created %s\n", game->getType().c_str());
 }
 
+/**
+ * Server processes a message from a node
+ */
 void processNodeMsg(JsonObject& msg, AsyncWebSocketClient* client)
 {
 		Node &node = getNode(strtoul(msg.get<char*>("node"), NULL, 0));
 		node.setClient(client);
+		node.updateTimestamp();
+		JsonVariant hit = msg["hit"];
+		if(hit.success()) {
+			game->shot(node, hit.as<int>(), msg["damage"]);
+		}
 }
 /**
  * Process a websocket message from a client - either node or browser
@@ -241,6 +271,9 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   }
 }
 
+/**
+ * Leaf node handling WebSocket events from server
+ */
 void clientWsEvent(WStype_t type, uint8_t * payload, size_t length) {
 
 	StaticJsonBuffer<200> jsonBuffer;
@@ -280,12 +313,28 @@ void clientWsEvent(WStype_t type, uint8_t * payload, size_t length) {
 			break;
 	}
 }
+
+/**
+ * Check all clients to see if they've timed out
+ */
+ void clientTimeout() {
+	for(uint i = 1; i < nodes.size(); i++) {
+		if(millis() - nodes[i].getTimestamp() > NODE_TIMEOUT) {
+			Serial.printf("Node %x timed out", nodes[i].getID());
+			nodes[i].getClient()->close(0, NULL);
+			nodes.erase(nodes.begin() + i);
+			return; // just avoid reindex problems
+		}
+	}
+ }
+
 /**
  * Connect and set up as a simple leaf node
  */
 void connectLeaf()
 {
 	role = LEAF;
+	WiFi.mode(WIFI_STA);
 
 	WiFi.begin(hostName);
 	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -308,7 +357,6 @@ void connectLeaf()
 void connectRoot()
 {
 	role = ROOT;
-	WiFi.disconnect();
 	Serial.println("I'm the server");
 	/*
 	WiFi.mode(WIFI_AP_STA);
@@ -413,13 +461,17 @@ void connectRoot()
   });
   server.begin();
 
+	// Start client timeout
+	h4.every(NODE_TIMEOUT,clientTimeout);
 }
 
 /**
  * Set up the WiFi and determine if we're the server or just a client
  */
 void connect() {
+	WiFi.disconnect();
 	nodes.clear();
+
 	// Root acts as a leaf too
 	nodes.push_back(Node(ESP.getChipId()));
 
@@ -437,14 +489,33 @@ void connect() {
 	connectRoot();
 }
 
+/**
+ * This node has been shot, the game decides what happens
+ */
+void hit(int team_id, int damage) {
+	hit(team_id);
+	if(role == LEAF) {
+		char buffer[16];
+		sprintf(buffer, "{node:%04x,hit:%d,damage:%d}",ESP.getChipId(), team_id, damage);
+		webSocket.sendTXT(buffer);
+	} else {
+		game->shot(nodes[0], team_id, damage);
+		Serial.printf("Current owner: %d\n", nodes[0].getOwner()->id);
+	}
+}
+
 void setup(){
+	delay(5000);
   Serial.begin(115200);
   Serial.setDebugOutput(true);
+	Serial.println("Hello");
+	setupLEDs();
 	connect();
-
+	setupIR();
 }
 
 void loop(){
+	loopIR();
 	if(role == LEAF)
 	{
 	  webSocket.loop();
@@ -457,5 +528,9 @@ void loop(){
     	webSocket.sendTXT(stringBuffer80);
 	    last = millis();
 	  }
+	}
+	else
+	{
+		h4.loop();
 	}
 }

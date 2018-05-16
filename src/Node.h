@@ -13,6 +13,10 @@
 #include <Team.h>
 #endif
 
+#ifndef Lights_h
+#include "Lights.h"
+#endif
+
 class Node {
 public:
 	enum class State : int {IDLE=0, STARTING=1, PLAY=2, ENDING=10, END=11, ERROR=20};
@@ -26,6 +30,7 @@ public:
 	virtual void start();
 	virtual inline void setState(int _state) {
 		state = static_cast<State>(_state);
+		Node::setState(state);
 	}
 	virtual void setState(State _state);
 	virtual void getStatus(JsonObject& node);
@@ -33,10 +38,13 @@ public:
 	inline void setClient(AsyncWebSocketClient* _client) { client = _client; }
 	inline AsyncWebSocketClient* getClient() { return client; }
 	inline void updateTimestamp() { timestamp = millis(); }
+	inline long getTimestamp() { return timestamp;}
+	virtual void setOwner(int team_id);
+	inline Team* getOwner() { return owner; }
 
 protected:
 	uint32_t id;         // Chip ID
-	State state;
+	State state = State::IDLE;
 	long timestamp;      // Last we heard from it
 	AsyncWebSocketClient* client = NULL; // Websocket client
 	Team* owner = NULL;

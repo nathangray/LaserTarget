@@ -3,25 +3,80 @@
 #include "Domination.h"
 #endif
 
+// Should probably be configurable
+#define MAX_SCORE 12
+
 void Domination::init() {
 	Game::init();
 
-	Serial.println("WTF?");
-	Serial.println(Domination::getType());
+	winner = NULL;
+	for(uint8_t i = 0; i < TEAM_COUNT_MAX; i++) {
+		teams[i].score = 0;
+	}
 }
-void Domination::setState(int _state) {
-	Game::setState(_state);
-	Serial.printf("Domination setting state to %d", _state);
+void Domination::setState(State _state) {
+	state = _state;
 	for( auto &node: nodes)
  	{
- 		node.setState(_state);
+		Serial.printf("Setting %x state %d\n", node.getID(), _state);
+ 		node.setState((int)_state);
  	}
+	Serial.printf("%s getState()=%d\n", this->getType().c_str(), (int)this->getState());
+	switch(state)
+	{
+		case State::IDLE:
+			Domination::init();
+			break;
+		case State::PLAY:
+			// Start game ticker
+			timer = h4.every(GAME_TICK, bind(&Domination::tick, this));
+			break;
+		case State::ENDING:
+			// Set all nodes to winner
+			for( auto &node: nodes)
+				node.setOwner(winner->id);
+			// Wait 10s, then end
+			h4.once(10000, bind(&Domination::setState, this, State::END));
+			// Fall through
+		default:
+			h4.never(timer);
+			break;
+	}
 }
-/*
-JsonObject& Domination::getStatus()
-{
-	JsonObject& status = Game::getStatus();
-	status.prettyPrintTo(Serial);
-	return status;
+
+void Domination::shot(Node &node, int team_id, int damage) {
+	// We only care if we're actually playing
+	if(state != State::PLAY) return;
+
+	node.setOwner(team_id);
+	Serial.printf("Node %04x got shot, owner now %d\n", node.getID(), node.getOwner()->id);
 }
-*/
+
+/**
+ * Add the current number of owned nodes to each team's score, & update the
+ * nodes
+ */
+void Domination::tick() {
+	Serial.print(".");
+	for( auto &node: nodes)
+ 	{
+		if(node.getOwner()) {
+			teams[node.getOwner()->id].score++;
+
+			if(node.getClient()) {
+				// TODO: send an update message
+			} else {
+				showScore(node.getOwner()->id,
+					teams[node.getOwner()->id].score);
+			}
+		}
+	}
+
+	// Check for win conditions - one team score hits the limit
+	for(uint8_t i = 0; i < TEAM_COUNT_MAX; i++) {
+		if(teams[i].score >= MAX_SCORE) {
+			this->winner =& teams[i];
+			this->setState(State::ENDING);
+		}
+	}
+}

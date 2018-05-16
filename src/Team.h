@@ -27,7 +27,6 @@ class Team {
 		static constexpr Pixel_t RED   {0, 0xFF, 0};
 		static constexpr Pixel_t GREEN {0xFF, 0, 0};
 		static constexpr Pixel_t WHITE {0xFF, 0xFF, 0xFF};
-
 };
 
 
