@@ -4,7 +4,7 @@
 #endif
 
 // Should probably be configurable
-#define MAX_SCORE 12
+#define MAX_SCORE 120
 
 void Domination::init() {
 	Game::init();
@@ -16,16 +16,16 @@ void Domination::init() {
 }
 void Domination::setState(State _state) {
 	state = _state;
-	for( auto &node: nodes)
- 	{
-		Serial.printf("Setting %x state %d\n", node.getID(), _state);
- 		node.setState((int)_state);
- 	}
 	Serial.printf("%s getState()=%d\n", this->getType().c_str(), (int)this->getState());
 	switch(state)
 	{
 		case State::IDLE:
 			Domination::init();
+			break;
+		case State::STARTING:
+			Domination::init();
+			// Wait 10s, then start
+			h4.once(10000, bind(&Domination::setState, this, State::PLAY));
 			break;
 		case State::PLAY:
 			// Start game ticker
@@ -33,8 +33,10 @@ void Domination::setState(State _state) {
 			break;
 		case State::ENDING:
 			// Set all nodes to winner
-			for( auto &node: nodes)
+			for( auto &node: nodes) {
 				node.setOwner(winner->id);
+				node.setTeamScore(winner->id, 100);
+			}
 			// Wait 10s, then end
 			h4.once(10000, bind(&Domination::setState, this, State::END));
 			// Fall through
@@ -42,9 +44,16 @@ void Domination::setState(State _state) {
 			h4.never(timer);
 			break;
 	}
+	for( auto &node: nodes)
+ 	{
+		Serial.printf("Setting %x state %d\n", node.getID(), _state);
+ 		node.setState((int)_state);
+ 	}
 }
 
 void Domination::shot(Node &node, int team_id, int damage) {
+	Serial.println("HERE - 1");
+	Serial.flush();
 	// We only care if we're actually playing
 	if(state != State::PLAY) return;
 
@@ -62,13 +71,8 @@ void Domination::tick() {
  	{
 		if(node.getOwner()) {
 			teams[node.getOwner()->id].score++;
-
-			if(node.getClient()) {
-				// TODO: send an update message
-			} else {
-				showScore(node.getOwner()->id,
-					teams[node.getOwner()->id].score);
-			}
+			node.setTeamScore(node.getOwner()->id,
+					(teams[node.getOwner()->id].score * 100) / MAX_SCORE);
 		}
 	}
 

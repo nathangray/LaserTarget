@@ -41,6 +41,7 @@ public:
 	inline long getTimestamp() { return timestamp;}
 	virtual void setOwner(int team_id);
 	inline Team* getOwner() { return owner; }
+	void setTeamScore(uint8_t team_id, uint8_t score);
 
 protected:
 	uint32_t id;         // Chip ID

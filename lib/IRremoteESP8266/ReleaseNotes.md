@@ -1,5 +1,41 @@
 # Release Notes
 
+## _v2.4.0 (20180407)_
+
+**[Bug Fixes]**
+- Add missing WiFi.begin() call to IRGCTCPServer example. (#433)
+- Add missing sendHaierAC() to IRMQTTServer example. (#434 & #444)
+- Make mqtt clientid unique in IRMQTTServer example. (#444)
+
+**[Features]**
+
+- Initial Mitsubishi projector protocol support. (#442)
+- Experimental support of Hitachi A/C messages. (#445)
+- Improve transmission pulse modulation support.
+  Allow disabling of transmission frequency modulation.(#439)
+
+**[Misc]**
+- IRMQTTServer example improvements. (#444)
+
+
+## _v2.3.3 (20180302)_
+
+**[Bug Fixes]**
+- Ensure the IR LED is off before we start. (#405)
+
+**[Features]**
+- Experimental decode support for Gree HVAC units (#397)
+- Initial support for Haier A/Cs. (#409)
+- Improve timing accuracy of unit tests. (#403)
+- Rework matchData() to handle equal total data bit time protocols. (#408)
+
+**[Misc]**
+- Add startup text to IRrecvDumpV2 and IRrecvDemo (#412)
+- Tweak timings on Fujitsu A/C header (#418)
+- AutoAnalyseRawData.sh: Add some support for handling larger than 64 bit codes. (#419)
+- Use better comments for send GPIO in examples. (#425)
+
+
 ## _v2.3.2 (20180126)_
 
 **[Bug Fixes]**

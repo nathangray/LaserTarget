@@ -111,7 +111,7 @@ void setGameState(int state)
 	Serial.printf("%s getState()=%d\n", game->getType().c_str(), (int)game->getState());
 	switch(game->getState())
 	{
-		case Game::State::PLAY:
+		case Game::State::STARTING:
 			node_update = h4.every(GAME_TICK, []() {
 				ws.textAll(getGameStatus());
 				// End if no longer playing
@@ -188,10 +188,13 @@ void processWebsocket(JsonObject& msg, AsyncWebSocketClient * client)
  */
 void processWebsocket(JsonObject& msg) {
 	Node& node = nodes[0];
-	JsonVariant state = msg["state"];
-	if(state.success())
+	if(msg.containsKey("state"))
 	{
 		node.setState(msg.get<int>("state"));
+	}
+	if(msg.containsKey("owner"))
+	{
+		node.setOwner(msg.get<int>("owner"));
 	}
 }
 
@@ -493,14 +496,15 @@ void connect() {
  * This node has been shot, the game decides what happens
  */
 void hit(int team_id, int damage) {
+	// Always show the hit
 	hit(team_id);
+
 	if(role == LEAF) {
 		char buffer[16];
 		sprintf(buffer, "{node:%04x,hit:%d,damage:%d}",ESP.getChipId(), team_id, damage);
 		webSocket.sendTXT(buffer);
 	} else {
 		game->shot(nodes[0], team_id, damage);
-		Serial.printf("Current owner: %d\n", nodes[0].getOwner()->id);
 	}
 }
 

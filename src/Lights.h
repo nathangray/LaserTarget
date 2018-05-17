@@ -19,17 +19,24 @@
 #include <ws2812_i2s.h>
 #define LED_COUNT 30
 
-void fill_solid(  Pixel_t * leds, int numToFill, Pixel_t& color);
 void setupLEDs();
 
 void hit(int team);
 void showScore(int team, int score);
 void blackout();
 void idle();
+void starting();
 void play();
 
+void fill_solid(  Pixel_t * leds, int numToFill, Pixel_t& color);
+uint8_t scoreToLed(int score);
 Pixel_t teamColor(int team);
 
+// Animations
+void ripple(Pixel_t hue, int height);
+int wrap(byte top_led, int step);
+
 // Single frame
- void _hit(Pixel_t color, int &frame);
+void _hit(Pixel_t color, int &frame);
+void _ripple(int &direction, int &frame) ;
 #endif

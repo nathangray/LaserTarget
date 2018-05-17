@@ -24,13 +24,19 @@
 // Value determined in https://github.com/markszabo/IRremoteESP8266/issues/62
 #define PERIOD_OFFSET -3
 #define DUTY_DEFAULT 50
+#define DUTY_MAX 100  // Percentage
+// delayMicroseconds() is only accurate to 16383us.
+// Ref: https://www.arduino.cc/en/Reference/delayMicroseconds
+#define MAX_ACCURATE_USEC_DELAY 16383U
 
 // Classes
 class IRsend {
  public:
-  explicit IRsend(uint16_t IRsendPin, bool inverted = false);
+  explicit IRsend(uint16_t IRsendPin, bool inverted = false,
+                  bool use_modulation = true);
   void begin();
   void enableIROut(uint32_t freq, uint8_t duty = DUTY_DEFAULT);
+  VIRTUAL void _delayMicroseconds(uint32_t usec);
   VIRTUAL uint16_t mark(uint16_t usec);
   VIRTUAL void space(uint32_t usec);
   void calibrate(uint16_t hz = 38000U);
@@ -157,6 +163,10 @@ void send(uint16_t type, uint64_t data, uint16_t nbits);
   void sendMitsubishi(uint64_t data, uint16_t nbits = MITSUBISHI_BITS,
                       uint16_t repeat = MITSUBISHI_MIN_REPEAT);
 #endif
+#if SEND_MITSUBISHI2
+  void sendMitsubishi2(uint64_t data, uint16_t nbits = MITSUBISHI_BITS,
+                       uint16_t repeat = MITSUBISHI_MIN_REPEAT);
+#endif
 #if SEND_MITSUBISHI_AC
   void sendMitsubishiAC(unsigned char data[],
                         uint16_t nbytes = MITSUBISHI_AC_STATE_LENGTH,
@@ -234,6 +244,11 @@ void send(uint16_t type, uint64_t data, uint16_t nbits);
                    uint16_t nbytes = HAIER_AC_STATE_LENGTH,
                    uint16_t repeat = 0);
 #endif
+#if SEND_HITACHI_AC
+  void sendHitachiAC(unsigned char data[],
+                     uint16_t nbytes = HITACHI_AC_STATE_LENGTH,
+                     uint16_t repeat = 0);
+#endif
 
  protected:
 #ifdef UNIT_TEST
@@ -246,13 +261,16 @@ void send(uint16_t type, uint64_t data, uint16_t nbits);
 #endif  // UNIT_TEST
   uint8_t outputOn;
   uint8_t outputOff;
+  VIRTUAL void ledOff();
+  VIRTUAL void ledOn();
 
  private:
   uint16_t onTimePeriod;
   uint16_t offTimePeriod;
   uint16_t IRpin;
   int8_t periodOffset;
-  void ledOff();
+  uint8_t _dutycycle;
+  bool modulation;
   uint32_t calcUSecPeriod(uint32_t hz, bool use_offset = true);
 };
 

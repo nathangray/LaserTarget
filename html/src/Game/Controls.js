@@ -22,7 +22,7 @@ class Controls extends React.Component {
 		switch (this.props.state)	{
 			case GAME.State.IDLE:
 				return <div className="controls">
-						<FontAwesome name='play' data-state={GAME.State.PLAY} onClick={this.changeHandler}/>
+						<FontAwesome name='play' data-state={GAME.State.STARTING} onClick={this.changeHandler}/>
 					</div>;
 			case GAME.State.STARTING:
 			case GAME.State.PLAY:
@@ -33,7 +33,7 @@ class Controls extends React.Component {
 			case GAME.State.END:
 				return <div className="controls">
 					<FontAwesome name='cogs' data-state={GAME.State.IDLE} onClick={this.changeHandler} />
-					<FontAwesome name='repeat' data-state={GAME.State.PLAY} onClick={this.changeHandler}/>
+					<FontAwesome name='repeat' data-state={GAME.State.STARTING} onClick={this.changeHandler}/>
 				</div>;
 			default:
 				return <div className="controls">
