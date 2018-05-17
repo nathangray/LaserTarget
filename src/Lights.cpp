@@ -130,7 +130,6 @@ uint8_t scoreToLed(int score) {
 	return led;
 }
 void ripple(Pixel_t hue, int height) {
-	Serial.printf("[Lights] ripple to %d\n",height);
 	ripple_height = min(LED_COUNT, height);
 	ripple_dir = 1;
 	ripple_hue = hue;

@@ -44,6 +44,8 @@ public:
 	void setTeamScore(uint8_t team_id, uint8_t score);
 
 protected:
+	boolean sendToClient(char* message);
+	
 	uint32_t id;         // Chip ID
 	State state = State::IDLE;
 	long timestamp;      // Last we heard from it

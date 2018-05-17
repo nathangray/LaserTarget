@@ -67,14 +67,11 @@ H4_TIMER node_update;
  * Get a node from the list by its ID
  */
 Node& getNode(uint32_t id) {
-	Serial.print("Looking for "); Serial.println(id, HEX);
 	uint i = 0;
 	for(; i < nodes.size(); i++) {
 		if(id == nodes[i].getID()) {
-			Serial.printf("Node %d is %04x\n", i, id);
 			return nodes[i];
 		}
-			Serial.printf("Node %d is %x\n", i, nodes[i].getID());
 	}
 	nodes.push_back(Node(id));
 	return nodes[i];
@@ -169,7 +166,6 @@ void processWebsocket(JsonObject& msg, AsyncWebSocketClient * client)
 {
 	JsonVariant node_id = msg["node"];
 	if(node_id.success()) {
-		Serial.printf("Got socket msg from node %s\n", node_id.as<char*>());
 		processNodeMsg(msg, client);
 	}
 	JsonVariant state = msg["state"];
@@ -208,6 +204,14 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 		client->text(getGameStatus());
   } else if(type == WS_EVT_DISCONNECT){
     Serial.printf("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+		for(uint8_t i = 1; i < nodes.size(); i++) {
+			if(nodes[i].getClient() && nodes[i].getClient()->id() == client->id()) {
+				Serial.printf("Lost node %04x", nodes[i].getID());
+				nodes[i].getClient()->close(0, NULL);
+				nodes[i].setClient(NULL);
+				nodes.erase(nodes.begin() + i);
+			}
+		}
   } else if(type == WS_EVT_ERROR){
     Serial.printf("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
   } else if(type == WS_EVT_PONG){
@@ -324,8 +328,9 @@ void clientWsEvent(WStype_t type, uint8_t * payload, size_t length) {
  void clientTimeout() {
 	for(uint i = 1; i < nodes.size(); i++) {
 		if(millis() - nodes[i].getTimestamp() > NODE_TIMEOUT) {
-			Serial.printf("Node %x timed out", nodes[i].getID());
+			Serial.printf("Node %x timed out\n", nodes[i].getID());
 			nodes[i].getClient()->close(0, NULL);
+			nodes[i].setClient(NULL);
 			nodes.erase(nodes.begin() + i);
 			return; // just avoid reindex problems
 		}
