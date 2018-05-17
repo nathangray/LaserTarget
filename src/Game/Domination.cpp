@@ -52,8 +52,6 @@ void Domination::setState(State _state) {
 }
 
 void Domination::shot(Node &node, int team_id, int damage) {
-	Serial.println("HERE - 1");
-	Serial.flush();
 	// We only care if we're actually playing
 	if(state != State::PLAY) return;
 
