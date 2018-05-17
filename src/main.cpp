@@ -112,7 +112,7 @@ void setGameState(int state)
 	switch(game->getState())
 	{
 		case Game::State::STARTING:
-			node_update = h4.every(GAME_TICK, []() {
+			node_update = h4.every(GAME_TICK*5, []() {
 				ws.textAll(getGameStatus());
 				// End if no longer playing
 				if(game->getState() == Game::State::END) h4.never(node_update);
