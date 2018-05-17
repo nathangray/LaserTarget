@@ -73,7 +73,10 @@ void showScore(int team, int score) {
 }
 void blackout()
 {
-	if(score_timer) h4.never(score_timer);
+	if(score_timer) {
+		h4.never(score_timer);
+		score_timer = 0;
+	}
 	fill_solid(leds, LED_COUNT, Black);
 	ledstrip.show(leds);
 }
@@ -85,6 +88,10 @@ void idle()
 }
 void starting()
 {
+	if(score_timer) {
+		h4.never(score_timer);
+		score_timer = 0;
+	}
 	uint8_t n=0;
 	h4.once(n++*1000, bind(fill_solid, leds, LED_COUNT, DarkRed), []() {ledstrip.show(leds);});
 	h4.once(n++*1000, blackout);

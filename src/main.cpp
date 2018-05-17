@@ -120,7 +120,8 @@ void setGameState(int state)
 			break;
 		case Game::State::IDLE:
 		case Game::State::END:
-			h4.never(node_update);
+		// Stop ALL timers
+			h4.never();
 	}
 }
 
